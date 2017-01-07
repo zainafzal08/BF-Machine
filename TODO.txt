@@ -1,0 +1,14 @@
+other:
+
+0. More Navigation buttons
+	- skip current loop
+1. error checking (invalid pointer movement, steping past end)
+2. dynamic memory / non fixed pixel sizes for divs. 
+
+Extended:
+1. breakpoints?
+2. form BF code from a more variable defined language. x = 3
+	- then show the original code, the BF code and walkthrough with fancy colours. 
+
+
+
