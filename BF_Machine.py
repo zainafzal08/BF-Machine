@@ -36,19 +36,7 @@ class Machine():
 	def doAction(self, c, **params):
 		if isBFCommand(c):
 			#Movement commands
-			if self.skip == True:
-				if self.code[self.index] == '[':
-					self.skipStack+=1
-					return
-				elif self.code[self.index] == ']':
-					if self.skipStack == 0:
-						self.skip = False
-					else:
-						self.skipStack = self.skipStack - 1
-					return
-				else:
-					return
-			elif c == "<" and self.pointer - 1 >= 0:
+			if c == "<" and self.pointer - 1 >= 0:
 				self.pointer = self.pointer - 1
 			elif c == ">" and self.pointer + 1 <= self.maxPoint:
 				self.pointer = self.pointer + 1	
@@ -62,10 +50,12 @@ class Machine():
 				x = ord(params['input'])
 				self.memory[self.pointer] = x
 			elif c == "[":
+				# we count skipped loops in loop depth
+				self.loopDepth+=1
 				if self.memory[self.pointer] == 0:
+					# jump to the end of this loop. 
 					self.skip = True
 				else:
-					self.loopDepth+=1
 					self.stack.append(self.index+1)
 			elif c == "]":
 				if self.memory[self.pointer] == 0:
@@ -78,7 +68,7 @@ class Machine():
 		else:
 			print("MACHINE: "+c+" is not a valid command")
 
-	#print out the current state of the memory
+	#print out the current state of the memory to stdout
 	def printMemory(self, lineSize):
 		curr = 0
 		while curr <= self.maxPoint:
@@ -98,8 +88,9 @@ class Machine():
 	def loadCode(self, code):
 		# Reset Machine State
 		self.hardReset()
-		#load in new data
+		#load in the code with all formatting for display
 		self.formattedCode = code
+		#generate a dictionary linking commands to lines for displays
 		self.lineMapping = {}
 		line = 0
 		curr = 0
@@ -109,18 +100,28 @@ class Machine():
 			elif isBFCommand(c):
 				self.lineMapping[curr] = line
 				curr += 1
+		#generate the pure code with no comments or formatting
 		code = re.sub(r'[^\<\>\+\-\,\.\[\]]',r'',code)
 		self.code = list(code)
 		self.maxIndex = len(code) - 1
 	# Step through one command of code
-	def step(self):
+	def step(self, **params):
+		if "run" in params:
+			run = params["run"]
+		else:
+			#default value
+			run = True
 		if self.finished == False:
-			self.doAction(self.code[self.index])
+			if run == True:
+				self.doAction(self.code[self.index])
 			self.index += 1
 			self.cycles += 1
 			if self.index > self.maxIndex:
 				self.finished = True
 				self.index = self.maxIndex
+			if self.skip:
+				self.skip = False
+				self.nextLoop(False)
 	# Run untill no more code
 	def run(self):
 		while self.finished == False:
@@ -140,15 +141,20 @@ class Machine():
 		self.maxIndex = 0
 		self.pointer = 0
 		self.skip = False
+		# Keeps track of the loops
 		self.stack = []
 		self.finished = False
 		self.output = []
+		# The maximum memory address
 		self.maxPoint = self.memSize-1
 		self.memory = [0]*(self.memSize)
+		# Total number of times step has been called
+		# In this machine every command is 1 cycle long.
 		self.cycles = 0
-		self.skipStack = 0
+		# Variables to help with debugging navigation
+		# Such as skip loop and next loop
 		self.loopDepth = 0
-	# soft reset the machine, just move the index pointer back and stuff
+	# soft reset the machine, keeps code in place so it can be run again
 	def reset(self):
 		self.index = 0
 		self.pointer = 0
@@ -158,45 +164,60 @@ class Machine():
 		self.output = []
 		self.memory = [0]*(self.memSize)
 		self.cycles = 0
-		self.skipStack = 0
 		self.loopDepth = 0
 	# skips current loop
 	def skipLoop(self):
-		try:
-			currLoop = self.stack[-1]
-		except:
+		# see if not in a loop at all
+		if not self.stack[-1]:
 			return None
+		# else skip the loop
+		currLoop = self.stack[-1]
+		# run until the loop is pop'ed off the stack
 		while currLoop in self.stack:
 			self.step()
-	# goes to next loop iteration
-	def nextLoop(self):
-		#empty stack
+
+	# goes to next loop iteration or if loop is done/skipped
+	# goes to the end of the loop
+	# run defines if this should go to the next loop with or
+	# without running the code
+	def nextLoop(self, run):
+		# Check if not in a loop at all
 		if self.loopDepth == 0:
-			return
+			return None
 		depth = self.loopDepth
 		while True:
 			if self.code[self.index] == ']' and self.loopDepth == depth:
-				self.step()
+				self.step(run=run)
 				break
-			self.step()
+			self.step(run=run)
 
-	#converts code to a nice html version
+	# Converts code to a nice html version
 	def codeToHTML(self):
 		array = self.formattedCode.split("\n")
 		selected = self.getSelectedLine()
+		# set up
 		output = []
 		output.append("<pre>")
+		# print out line numbers and the code
 		for n,l in enumerate(array):
 			if n == selected:
 				count = 0
+				#quite bad solution to get the 
+				#current commands character index in the line
 				for k in self.lineMapping.keys():
 					if self.lineMapping[k] < selected:
 						count+=1
+				#relIndex tells us where in the line the
+				#current command is so it cna be highlighted
+				#in red
 				relIndex = self.index - count
 				newL = ""
 				i = 0
+				# This generates a blue coloured line 
+				# for the current running line
 				for c in list(l):
 					if i == relIndex and isBFCommand(c):
+						#This highlights the current character red
 						newL = newL+"<span style=\"color: red;\">"+c+"</span>"
 						i += 1
 					elif isBFCommand(c):
@@ -204,19 +225,26 @@ class Machine():
 						newL = newL+c
 					else:
 						newL = newL+c
+				# This somehow adds a line break after the selected line
+				# no idea how but it kinda looks like a feature so
+				# i'm gonna pretend like it's not a bug
 				output.append("<b style=\"color: #2196f3;\">" + str(n) + "  " + newL + "</b>")
 			else:
 				output.append(str(n) + "  " + l)
+		# ending tags and return
 		output.append("</pre>")
 		return "\n".join(output)
 
 	# Creates a html console with the current output
 	def consoleToHTML(self):
+		# get the size of the memory html
+		# and match that. 
 		rows = int(self.maxPoint/ 8)+1
 		rowH = 30 # editable (in two places :/ )
 		h = rowH*rows
+		# CSS set up
 		output = []
-		#This Console style comes fron 
+		#This Console style comes mostly from with small edits from me
 		#http://www.java2s.com/Code/HTMLCSS/Tags/CreateConsolewindowlikestyletodisplaycode.htm
 		output.append("<style type=\"text/css\">")
 		output.append("    console {")
@@ -234,27 +262,37 @@ class Machine():
 		output.append("</style>")
 		output.append("<console>")
 		output.append("    <code>")
+		# replace new lines with line breaks 
+		# so they will be shown in html
 		for l in self.output:
 			if l == "\n":
 				output.append("<br></br>")
 			else:
 				output.append(l)
-			
+		# end and return
 		output.append("    </code>")
 		output.append("</console>")
 		return "".join(output)
 	# Creates a html representation of memory
 	def memoryToHTML(self):
-		#set up
+		# given 8 cells per row
+		# the number of rows is total memory
+		# rounded up. Thus if memory is 7 big
+		# we get 1 row, not 0
 		rows = int(self.maxPoint/ 8)+1
+		# some pixel values to define how big the
+		# rows and spacing should be
 		rowH = 30 # editable
 		colW = 30 # editable
+		# defines the hex printing padding.
+		# for this we assume the cell values is 16 bit. 
 		hexLen = 4 # editable
 		h = rowH*rows
 		output = []
+		# open tags
 		output.append("<svg style=\"height:"+str(h)+"px; width: 100%\">")
 		output.append("<g>")
-		#generate background
+		#generate background strips
 		y = 0
 		even = True
 		for r in range(0,rows):
@@ -264,30 +302,42 @@ class Machine():
 			else:
 				output.append(rect(0,y,rowH,"#CECECE",1))
 				even = True
-
 			y = y + rowH
-		#generate memory
+		#generate the memory
+
+		# Y should be offset to center the text in the rows
+		# Try setting y to 0 and you will see why this is 
+		# needed. 
 		y = rowH - (rowH/4)
 		for r in range(0,rows):
+			# offset for the row address
 			off = 15
+			# Print out the address of the current row
+			#(0x0000 or 0x0008)
 			hexData = "{0:#0{1}x}".format(r*8,hexLen+2)
 			output.append(text(0,y,hexData,off,"#000000"))
+			# Move offset down a bit before printing cell values
 			off = colW + 3*(hexLen+24) 
+			# print out 8 values in hex
 			for i in range(0,8):
 				curr = (r*8)+i
 				hexData = "{0:0{1}x}".format(self.memory[curr],hexLen)
+				# highlight the cell where the pointer is currently
 				if curr == self.pointer:
 					color = "#2196f3"
 				else:
 					color = "#000000"
 				output.append(text(0,y,hexData,off,color))
+				# Move down the row for the next print
 				off += + colW + 3*hexLen
+			#move down to the next row
 			y = y + rowH
 		#finish up
 		output.append("</g>")
 		output.append("</svg>")
 		return "".join(output)
-# Checks if a character is 
+# Checks if a character is a valid BF Command
+# Can only be <>[]-+.,
 def isBFCommand(c):
 	m = re.search(r'([\<\>\+\-\,\.\[\]])', c)
 	if m:
@@ -298,13 +348,9 @@ def isBFCommand(c):
 #testing
 if __name__ == '__main__':
 	machine = Machine(16)
-	code = "+++[>+<-]+"
+	code = "[>+<-]+"
 	machine.loadCode(code)
 	machine.step()
 	machine.step()
-	machine.step()
-	machine.step()
-	machine.nextLoop()
 	print("now on " + str(machine.index))
-	machine.step()
 	machine.printMemory(8)

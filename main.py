@@ -32,7 +32,7 @@ def BFD():
 			elif request.form["post"] == "run":
 				machine.run()
 			elif request.form["post"] == "next":
-				machine.nextLoop()
+				machine.nextLoop(True)
 			session['pc'] = machine.cycles
 	return render_template('BFD.html', code=machine.codeToHTML(), console=machine.consoleToHTML(), memory=machine.memoryToHTML())
 
