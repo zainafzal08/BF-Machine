@@ -36,10 +36,18 @@ class Machine():
 	def doAction(self, c, **params):
 		if isBFCommand(c):
 			#Movement commands
-			if self.skip == True and c != "]":
-				self.skip = True
-			elif self.skip == True and c == "]":
-				self.skip = False
+			if self.skip == True:
+				if self.code[self.index] == '[':
+					self.skipStack+=1
+					return
+				elif self.code[self.index] == ']':
+					if self.skipStack == 0:
+						self.skip = False
+					else:
+						self.skipStack = self.skipStack - 1
+					return
+				else:
+					return
 			elif c == "<" and self.pointer - 1 >= 0:
 				self.pointer = self.pointer - 1
 			elif c == ">" and self.pointer + 1 <= self.maxPoint:
@@ -57,11 +65,15 @@ class Machine():
 				if self.memory[self.pointer] == 0:
 					self.skip = True
 				else:
+					self.loopDepth+=1
 					self.stack.append(self.index+1)
 			elif c == "]":
 				if self.memory[self.pointer] == 0:
+					#loop over, pop and move on
+					self.loopDepth-=1
 					self.stack.pop()
 				else:
+					#loop is not over, keep going
 					self.index = self.stack[-1]-1
 		else:
 			print("MACHINE: "+c+" is not a valid command")
@@ -108,6 +120,7 @@ class Machine():
 			self.cycles += 1
 			if self.index > self.maxIndex:
 				self.finished = True
+				self.index = self.maxIndex
 	# Run untill no more code
 	def run(self):
 		while self.finished == False:
@@ -133,6 +146,8 @@ class Machine():
 		self.maxPoint = self.memSize-1
 		self.memory = [0]*(self.memSize)
 		self.cycles = 0
+		self.skipStack = 0
+		self.loopDepth = 0
 	# soft reset the machine, just move the index pointer back and stuff
 	def reset(self):
 		self.index = 0
@@ -143,6 +158,8 @@ class Machine():
 		self.output = []
 		self.memory = [0]*(self.memSize)
 		self.cycles = 0
+		self.skipStack = 0
+		self.loopDepth = 0
 	# skips current loop
 	def skipLoop(self):
 		try:
@@ -150,6 +167,17 @@ class Machine():
 		except:
 			return None
 		while currLoop in self.stack:
+			self.step()
+	# goes to next loop iteration
+	def nextLoop(self):
+		#empty stack
+		if self.loopDepth == 0:
+			return
+		depth = self.loopDepth
+		while True:
+			if self.code[self.index] == ']' and self.loopDepth == depth:
+				self.step()
+				break
 			self.step()
 
 	#converts code to a nice html version
@@ -180,7 +208,6 @@ class Machine():
 			else:
 				output.append(str(n) + "  " + l)
 		output.append("</pre>")
-		print(output)
 		return "\n".join(output)
 
 	# Creates a html console with the current output
@@ -271,42 +298,13 @@ def isBFCommand(c):
 #testing
 if __name__ == '__main__':
 	machine = Machine(16)
-	code = '''
-		+++++ +++               Set Cell #0 to 8
-		[
-		    >++++               Add 4 to Cell #1; this will always set Cell #1 to 4
-		    [                   as the cell will be cleared by the loop
-		        >++             Add 4*2 to Cell #2
-		        >+++            Add 4*3 to Cell #3
-		        >+++            Add 4*3 to Cell #4
-		        >+              Add 4 to Cell #5
-		        <<<<-           Decrement the loop counter in Cell #1
-		    ]                   Loop till Cell #1 is zero
-		    >+                  Add 1 to Cell #2
-		    >+                  Add 1 to Cell #3
-		    >-                  Subtract 1 from Cell #4
-		    >>+                 Add 1 to Cell #6
-		    [<]                 Move back to the first zero cell you find; this will
-		                        be Cell #1 which was cleared by the previous loop
-		    <-                  Decrement the loop Counter in Cell #0
-		]                       Loop till Cell #0 is zero
-		
-		The result of this is:
-		Cell No :   0   1   2   3   4   5   6
-		Contents:   0   0  72 104  88  32   8
-		Pointer :   ^
-		
-		>>.                     Cell #2 has value 72 which is 'H'
-		>---.                   Subtract 3 from Cell #3 to get 101 which is 'e'
-		+++++ ++..+++.          Likewise for 'llo' from Cell #3
-		>>.                     Cell #5 is 32 for the space
-		<-.                     Subtract 1 from Cell #4 for 87 to give a 'W'
-		<.                      Cell #3 was set to 'o' from the end of 'Hello'
-		+++.----- -.----- ---.  Cell #3 for 'rl' and 'd'
-		>>+.                    Add 1 to Cell #5 gives us an exclamation point
-		>++.                    And finally a newline from Cell #6
-
-	'''
+	code = "+++[>+<-]+"
 	machine.loadCode(code)
 	machine.step()
-	sys.stdout.write(machine.memoryToHTML())
+	machine.step()
+	machine.step()
+	machine.step()
+	machine.nextLoop()
+	print("now on " + str(machine.index))
+	machine.step()
+	machine.printMemory(8)

@@ -1,7 +1,6 @@
 other:
 
-0. More Navigation buttons
-	- skip current loop
+0. Preserve Scroll
 1. error checking (invalid pointer movement, steping past end)
 2. dynamic memory / non fixed pixel sizes for divs. 
 
