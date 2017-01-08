@@ -3,6 +3,8 @@ other:
 0. Preserve Scroll
 1. error checking (invalid pointer movement, steping past end)
 2. dynamic memory / non fixed pixel sizes for divs. 
+3. make github readme/running this easier
+4. make live
 
 Extended:
 1. breakpoints?
