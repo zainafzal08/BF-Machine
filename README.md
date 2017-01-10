@@ -1,4 +1,4 @@
-# BF_Debugger
+# BF-Machine
 A web debugging enviornment/Virtual Machine for running the BrainFuck Programming Langauge
 
 # Running
