@@ -253,7 +253,7 @@ class Machine():
 		output.append("        color: #ccc;")
 		output.append("        display: block;")
 		output.append("        padding: 5px;")
-		output.append("        height: "+str(h)+"px;")
+		output.append("        height: 23vh")
 		output.append("     }")
 		output.append("    code {")
 		output.append("        background: #000000;")
@@ -287,10 +287,10 @@ class Machine():
 		# defines the hex printing padding.
 		# for this we assume the cell values is 16 bit. 
 		hexLen = 4 # editable
-		h = rowH*rows
+		h = rows*rowH
 		output = []
 		# open tags
-		output.append("<svg style=\"height:"+str(h)+"px; width: 100%\">")
+		output.append("<svg style=\"height: 43vh; width: 100%\">")
 		output.append("<g>")
 		#generate background strips
 		y = 0
