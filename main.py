@@ -14,11 +14,17 @@ def BFD():
 		if session['pc'] == -1:
 			#first time, grab code
 			session['code'] = request.form['code']
+			try:
+				session['code'][0]
+			except:
+				return redirect("/BFD")
 			session['pc'] = 0
 			session['scroll'] = 0
 			noPost = True
 		machine = BF_Machine.Machine(80)
-		machine.loadCode(session['code'])
+		success = machine.loadCode(session['code'])
+		if not success: 
+			return redirect("/BFD")
 		#get back to old state
 		machine.runFor(session['pc'])
 		if noPost == False:
@@ -36,6 +42,7 @@ def BFD():
 				machine.nextLoop(True)
 			session['pc'] = machine.cycles
 			session['scroll'] = request.form['scroll']
+
 		return render_template('BFD.html', code=machine.codeToHTML(), console=machine.consoleToHTML(), memory=machine.memoryToHTML(), scroll=session['scroll'])
 
 

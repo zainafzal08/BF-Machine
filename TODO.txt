@@ -1,4 +1,5 @@
-
+todo:
+have better error handling for empty code load attempt
 Extended:
 1. breakpoints?
 2. form BF code from a more variable defined language. x = 3

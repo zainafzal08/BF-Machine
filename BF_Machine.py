@@ -104,6 +104,9 @@ class Machine():
 		code = re.sub(r'[^\<\>\+\-\,\.\[\]]',r'',code)
 		self.code = list(code)
 		self.maxIndex = len(code) - 1
+		if len(self.code) == 0:
+			return False
+		return True
 	# Step through one command of code
 	def step(self, **params):
 		if "run" in params:
@@ -112,6 +115,12 @@ class Machine():
 			#default value
 			run = True
 		if self.finished == False:
+			if self.cycles > self.maxCycles:
+ 				self.output.append("Program has passed the maximum number of permitted cycles\n")
+ 				self.output.append("and has been terminated, this usually occurs due to a infinite loop.\n")
+ 				self.output.append("If this is not the case, edit the maxCycles value in the machine.")
+ 				self.finished = True
+ 				return
 			if run == True:
 				self.doAction(self.code[self.index])
 			self.index += 1
@@ -141,6 +150,7 @@ class Machine():
 		self.maxIndex = 0
 		self.pointer = 0
 		self.skip = False
+		self.maxCycles = 5000
 		# Keeps track of the loops
 		self.stack = []
 		self.finished = False
