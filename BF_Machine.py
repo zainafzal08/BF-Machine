@@ -116,9 +116,8 @@ class Machine():
 			run = True
 		if self.finished == False:
 			if self.cycles > self.maxCycles:
- 				self.output.append("Program has passed the maximum number of permitted cycles\n")
- 				self.output.append("and has been terminated, this usually occurs due to a infinite loop.\n")
- 				self.output.append("If this is not the case, edit the maxCycles value in the machine.")
+ 				self.output.append("$> Program exceed max cycles")
+ 				self.output.append("\n")
  				self.finished = True
  				return
 			if run == True:
@@ -135,6 +134,7 @@ class Machine():
 	def run(self):
 		while self.finished == False:
 			self.step()
+		self.output.append("$> Execution Finished")
 	# Run for a specifed number of steps
 	def runFor(self, num):
 		curr = 0
@@ -276,9 +276,10 @@ class Machine():
 		output.append("    <code>")
 		# replace new lines with line breaks 
 		# so they will be shown in html
+		output.append("<br> $> Console Loaded <br>")
 		for l in self.output:
 			if l == "\n":
-				output.append("<br></br>")
+				output.append("<br>")
 			else:
 				output.append(l)
 		# end and return
