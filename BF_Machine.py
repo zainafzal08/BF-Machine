@@ -178,7 +178,9 @@ class Machine():
 	# skips current loop
 	def skipLoop(self):
 		# see if not in a loop at all
-		if not self.stack[-1]:
+		if len(self.stack) == 0:
+			return None
+		elif not self.stack[-1]:
 			return None
 		# else skip the loop
 		currLoop = self.stack[-1]

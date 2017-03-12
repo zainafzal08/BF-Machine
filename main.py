@@ -32,7 +32,8 @@ def BFD():
 				machine.step()
 			elif request.form["post"] == "step-":
 				reset = session['pc'] - 1
-				machine = getDefaultMachine()
+				machine = BF_Machine.Machine(80)
+				machine.loadCode(session['code'])
 				machine.runFor(reset)
 			elif request.form["post"] == "skip":
 				machine.skipLoop()
@@ -42,7 +43,6 @@ def BFD():
 				machine.nextLoop(True)
 			session['pc'] = machine.cycles
 			session['scroll'] = request.form['scroll']
-
 		return render_template('BFD.html', code=machine.codeToHTML(), console=machine.consoleToHTML(), memory=machine.memoryToHTML(), scroll=session['scroll'])
 
 
