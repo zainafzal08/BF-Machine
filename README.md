@@ -1,5 +1,6 @@
 # BF-Machine
 A web debugging enviornment/Virtual Machine for running the BrainFuck Programming Langauge
+See it live here: www.zainafzal.com/BFD
 
 # Running
 The code in main.py is simply a flask server that generates a very nice interface to interact with the sudo-virtual machine in BF_Machine.py. To use simply run main.py as a python script and navigate to http://127.0.0.1:5000/BFD
